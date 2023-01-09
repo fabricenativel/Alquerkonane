@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from functools import lru_cache
 import PySimpleGUI as sg
 
 '''
@@ -6,8 +7,8 @@ La case en haut et à gauche est (0,0)
 on donne l'indice de LIGNE ne premier et l'indice de COLONNE en deuxième
 '''
 
-SIZE = 4
-LINE_NUMBER = 1
+SIZE = 6
+LINE_NUMBER = 2
 MOVES_BLACK = [(1,-1),(1,1)]
 MOVES_WHITE = [(-1,-1),(-1,1)]
 TAKES  = [(0,2),(0,-2),(2,0),(-2,0)]
@@ -25,7 +26,7 @@ class GameState:
     black_plays : bool
 
     def get_moves(self):
-        '''renvoie la liste des mouvements possibles pour un état de jeu sous la forme d'un ensemble de tuples (un triplet pour une prise, un couple pour un mouvement). Le premier élément du tuple est le nouvel emplacement du pion. L'autre (ou les deux autres) sont à supprimer'''
+        '''renvoie la liste des mouvements possibles pour un état de jeu sous la forme d'un ensemble de tuples (un triplet pour une prise, un couple pour un mouvement). Le premier élément du tuple est le nouvel emplacement du pion. L'autre (ou les deux autres) sont les pions qui disparaissent suite au mouvement'''
         possible_moves = set()
         if self.black_plays:
             pawns, ennemies, moves = self.black, self.white, MOVES_BLACK
@@ -97,6 +98,7 @@ class GameState:
         else:
             return GameState(new_ennemies,frozenset(new_pawns),True)
 
+    @lru_cache(maxsize=None)
     def winner(self):
         moves = self.get_moves()
         if self.black_plays:
