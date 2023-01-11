@@ -2,18 +2,17 @@ from dataclasses import dataclass
 from functools import lru_cache
 import PySimpleGUI as sg
 from time import perf_counter
-from sys import getsizeof
 
 '''
 La case en haut et à gauche est (0,0)
 on donne l'indice de LIGNE ne premier et l'indice de COLONNE en deuxième
 '''
 
-SIZE = 6
+SIZE = 4
 LINE_NUMBER = 2
 BLACK_START = False
 
-GET_WINNER = False
+GET_WINNER = True
 
 MOVES_BLACK = [(1,-1),(1,1)]
 MOVES_WHITE = [(-1,-1),(-1,1)]
@@ -173,6 +172,15 @@ class Alquerkonane:
         self.view['tleft'].Update(f"{wp} White : {len(self.state.white)} {ww}")
         self.view['tright'].Update(f"{bp} Black : {len(self.state.black)} {bw}")
     
+    def end(self):
+        if self.state.black_plays:
+            w = "white"
+        else:
+            w = "black"
+        self.view['tleft'].Update(f"{w} player wins")
+        self.view['tright'].Update(f"")
+
+    
     def select(self,l,c):
         if (l,c) in self.state.white:
             select_img = WHITE_SELECTED
@@ -226,6 +234,8 @@ class Alquerkonane:
         self.state = self.state.play(m)
         self.history.append(m)
         self.set_text()
+        if len(game.state.get_moves())==0:
+            game.end()
     
     def undo_move(self):
         if self.state.black_plays:
@@ -264,7 +274,6 @@ def conversion(event):
 
 
 game = Alquerkonane(SIZE)
-print(getsizeof(game.state))
 if GET_WINNER:
     start =  perf_counter()
     print("La position est gagnante pour ",game.state.winner())
