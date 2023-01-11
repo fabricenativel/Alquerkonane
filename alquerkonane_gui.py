@@ -12,7 +12,7 @@ SIZE = 4
 LINE_NUMBER = 2
 BLACK_START = False
 
-GET_WINNER = False
+GET_WINNER = True
 
 MOVES_BLACK = [(1,-1),(1,1)]
 MOVES_WHITE = [(-1,-1),(-1,1)]
@@ -22,6 +22,8 @@ WHITE_EMPTY, BLACK_EMPTY = "white.png", "black.png"
 WHITE_SELECTED, BLACK_SELECTED = "white_selected.png","black_selected.png"
 WHITE_LANDING, BLACK_LANDING = "white_landing.png","black_landing.png"
 
+PLAYER = chr(0x25B6)
+WINNER = chr(0x2605)
 
 @dataclass(frozen=True)
 class GameState:
@@ -81,9 +83,9 @@ class GameState:
         else:
             new_ennemies = ennemies.copy()
         if self.black_plays:
-            return GameState(new_ennemies,frozenset(new_pawns),False)
+            return GameState(frozenset(new_ennemies),frozenset(new_pawns),False)
         else:
-            return GameState(frozenset(new_pawns),new_ennemies,True)
+            return GameState(frozenset(new_pawns),frozenset(new_ennemies),True)
     
     def undo(self,move):
         if self.black_plays:
@@ -98,9 +100,9 @@ class GameState:
         else:
             new_ennemies = ennemies.copy()
         if self.black_plays:
-            return GameState(frozenset(new_pawns),new_ennemies,False)
+            return GameState(frozenset(new_pawns),frozenset(new_ennemies),False)
         else:
-            return GameState(new_ennemies,frozenset(new_pawns),True)
+            return GameState(frozenset(new_ennemies),frozenset(new_pawns),True)
 
     @lru_cache(maxsize=None)
     def winner(self):
@@ -124,9 +126,11 @@ class GameState:
 class Alquerkonane:
 
     def __init__(self, size):
+        textleft = sg.Text("",key='tleft',size=(15,1),justification='l')
+        textright = sg.Text("",key='tright',size=(15,1),justification='r')
         top = [[sg.Button('',key=f'({lig},{col})',pad=(0,0)) for col in range(size)] for lig in range(size)]
         bottom =[[sg.Button("Undo"),sg.Button("Reset"),sg.Button("Exit")]]
-        layout = [[top,sg.HSeparator(),bottom]]
+        layout = [[textleft,sg.Stretch(),textright],[sg.HSeparator()],[top],[sg.HSeparator()],[bottom]]
         self.size = size
         self.view = sg.Window('Alquerkonane', layout,finalize=True)
         self.state = get_start(size)
@@ -151,6 +155,20 @@ class Alquerkonane:
             content[(l,c)] = BLACK_PAWN
         for l,c in content:
             self.view[f'({l},{c})'].Update(image_filename=content[(l,c)])
+        self.set_text()
+        
+    def set_text(self):
+        if self.state.black_plays:
+            wp,bp = " ",PLAYER
+        else:
+            wp,bp = PLAYER," "
+        if GET_WINNER:
+            if self.state.winner()=="white":
+                ww,bw = WINNER," "
+            else:
+                ww,bw = " ",WINNER
+        self.view['tleft'].Update(f"{wp} White : {len(self.state.white)} {ww}")
+        self.view['tright'].Update(f"{bp} Black : {len(self.state.black)} {bw}")
     
     def select(self,l,c):
         if (l,c) in self.state.white:
@@ -204,6 +222,7 @@ class Alquerkonane:
         self.selected, self.landing = None,set()
         self.state = self.state.play(m)
         self.history.append(m)
+        self.set_text()
     
     def undo_move(self):
         if self.state.black_plays:
@@ -221,6 +240,8 @@ class Alquerkonane:
             if len(move)==3:
                 self.view[f'({move[2][0]},{move[2][1]})'].Update(image_filename=pawn_kill)
             self.state = self.state.undo(move)
+            self.set_text()
+
 
 def dans_grille(i,j):
     return 0<=i<SIZE and 0<=j<SIZE
