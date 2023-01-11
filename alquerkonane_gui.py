@@ -8,9 +8,11 @@ La case en haut et à gauche est (0,0)
 on donne l'indice de LIGNE ne premier et l'indice de COLONNE en deuxième
 '''
 
-SIZE = 3
+SIZE = 4
 LINE_NUMBER = 2
 BLACK_START = False
+
+GET_WINNER = False
 
 MOVES_BLACK = [(1,-1),(1,1)]
 MOVES_WHITE = [(-1,-1),(-1,1)]
@@ -225,8 +227,8 @@ def dans_grille(i,j):
 
 def get_start(size):
     if size%2 == 0:
-        white = frozenset({(SIZE-i-1,j+i%2-LINE_NUMBER%2) for j in range(0,size,2) for i in range(LINE_NUMBER)})
-        black = frozenset({(i,j+i%2-LINE_NUMBER%2) for j in range(0,SIZE,2) for i in range(LINE_NUMBER)}) 
+        white = frozenset({(SIZE-i-1,j+i%2) for j in range(0,size,2) for i in range(LINE_NUMBER)})
+        black = frozenset({(i,j+i%2) for j in range(0,SIZE,2) for i in range(LINE_NUMBER)}) 
     else:
         white = frozenset({(SIZE-i-1,j+i%2-1) for j in range(0,size,2) for i in range(LINE_NUMBER) if size>j+i%2-1>=0 })
         black = frozenset({(i,j+i%2) for j in range(0,SIZE,2) for i in range(LINE_NUMBER) if size>j+i%2>=0}) 
@@ -238,9 +240,10 @@ def conversion(event):
 
 
 game = Alquerkonane(SIZE)
-start =  perf_counter()
-print("La position est gagnante pour ",game.state.winner())
-print(f"Calcul en {perf_counter()-start} sec")
+if GET_WINNER:
+    start =  perf_counter()
+    print("La position est gagnante pour ",game.state.winner())
+    print(f"Calcul en {perf_counter()-start} sec")
 exit = False
 while not exit:
     event, values = game.view.read()
