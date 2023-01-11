@@ -8,7 +8,7 @@ BLACK_START = False
 ```
 ici c'est un échiquier 3x3 avec deux lignes de pions et les blancs commencent
 
-La constante `GET_WINNER` (ligne 15) est un booléen indiquant si on doit ou non rechercher qui a la position gagnante, si elle est à `False`, le programme permet juste deux jouer une partie entre deux joueurs humains.
+La constante `GET_WINNER` (ligne 15) est un booléen indiquant si on doit ou non rechercher qui a la position gagnante, si elle est à `False`, le programme permet juste de jouer une partie entre deux joueurs humains.
 
 
 **Temps de calcul** : pour un échiquier 5x5 et deux lignes de pions déjà plus de 3 minutes de temps de calcul. La taille du cache dépasse 5 Go. La taille 6x6 avec 2 lignes de pions est hors d'atteinte. 
