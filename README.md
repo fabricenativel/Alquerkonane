@@ -4,7 +4,7 @@ La configuration du jeu est à changer au début du programme (lignes 11 à 13) 
 ```
 SIZE = 3
 LINE_NUMBER = 2
-BLACK_START = True
+BLACK_START = False
 ```
 ici c'est un échiquier 3x3 avec deux lignes de pions et les blancs commencent
 
