@@ -1,14 +1,15 @@
 from dataclasses import dataclass
 from functools import lru_cache
 import PySimpleGUI as sg
+from time import perf_counter
 
 '''
 La case en haut et à gauche est (0,0)
 on donne l'indice de LIGNE ne premier et l'indice de COLONNE en deuxième
 '''
 
-SIZE = 6
-LINE_NUMBER = 2
+SIZE =4
+LINE_NUMBER =2
 MOVES_BLACK = [(1,-1),(1,1)]
 MOVES_WHITE = [(-1,-1),(-1,1)]
 TAKES  = [(0,2),(0,-2),(2,0),(-2,0)]
@@ -18,7 +19,7 @@ WHITE_SELECTED, BLACK_SELECTED = "white_selected.png","black_selected.png"
 WHITE_LANDING, BLACK_LANDING = "white_landing.png","black_landing.png"
 
 
-@dataclass(frozen=True,slots=True)
+@dataclass(frozen=True)
 class GameState:
     '''Un état du jeu d'alquerkonane', les attributs sont les coordonnées des pions noirs/blancs et un booléen indiquant si les c'est le tour des noirs'''
     white : frozenset
@@ -61,7 +62,6 @@ class GameState:
 
     def __str__(self):
         return f"coordonnées des blancs : {self.white} \n coordonnées des noirs : {self.black}"
-
 
     
     def play(self,move):
@@ -232,7 +232,9 @@ def conversion(event):
 
 
 game = Alquerkonane(SIZE)
-print(game.state.winner())
+start =  perf_counter()
+print("La position est gagnante pour ",game.state.winner())
+print(f"Calcul en {perf_counter()-start} sec")
 exit = False
 while not exit:
     event, values = game.view.read()
@@ -243,9 +245,8 @@ while not exit:
         game.reset(SIZE)
     elif event=='Undo':
         game.undo_move()
-    elif game.selected==None and ((conversion(event) in game.state.black and game.state.black_plays) or (conversion(event) in game.state.white and not game.
+    elif game.selected==None and ((conversion(event) in game.state.black and game.state.black_plays) or (conversion(event) in game.state.white and not game.state.black_plays)):
         # Selection d'un pion
-        state.black_plays)):
             game.select(*conversion(event))
         # Déselection d'un pion
     elif game.selected!=None and game.selected == conversion(event):
