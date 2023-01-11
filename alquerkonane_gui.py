@@ -8,8 +8,10 @@ La case en haut et à gauche est (0,0)
 on donne l'indice de LIGNE ne premier et l'indice de COLONNE en deuxième
 '''
 
-SIZE =4
-LINE_NUMBER =2
+SIZE = 3
+LINE_NUMBER = 2
+BLACK_START = False
+
 MOVES_BLACK = [(1,-1),(1,1)]
 MOVES_WHITE = [(-1,-1),(-1,1)]
 TAKES  = [(0,2),(0,-2),(2,0),(-2,0)]
@@ -222,9 +224,13 @@ def dans_grille(i,j):
     return 0<=i<SIZE and 0<=j<SIZE
 
 def get_start(size):
-    white = frozenset({(SIZE-i-1,j+i%2) for j in range(0,size,2) for i in range(LINE_NUMBER)})
-    black = frozenset({(i,j+i%2) for j in range(0,SIZE,2) for i in range(LINE_NUMBER)}) 
-    return GameState(white,black,False)
+    if size%2 == 0:
+        white = frozenset({(SIZE-i-1,j+i%2-LINE_NUMBER%2) for j in range(0,size,2) for i in range(LINE_NUMBER)})
+        black = frozenset({(i,j+i%2-LINE_NUMBER%2) for j in range(0,SIZE,2) for i in range(LINE_NUMBER)}) 
+    else:
+        white = frozenset({(SIZE-i-1,j+i%2-1) for j in range(0,size,2) for i in range(LINE_NUMBER) if size>j+i%2-1>=0 })
+        black = frozenset({(i,j+i%2) for j in range(0,SIZE,2) for i in range(LINE_NUMBER) if size>j+i%2>=0}) 
+    return GameState(white,black,BLACK_START)
 
 def conversion(event):
     levent = event[1:-1].split(",")
