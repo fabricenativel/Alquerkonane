@@ -42,6 +42,7 @@ HELP_H = 'Hauteur du damier, valeur par défaut 4'
 HELP_L = 'Nombre de lignes de pions, 1 ou 2 (par défaut)'
 HELP_WIN = "Calcule qui est le gagnant de l'état courant"
 
+
 class View:
 
     KEYS = 'Black', 'White'
@@ -72,11 +73,17 @@ class View:
         self.window = sg.Window('Alquerkonane', layout, finalize=True)
 
     def set_grid(self, i, j, filename):
+        """Met à jour la vue de la case de coordonnée i, j avec le fichier image filename"""
         self.window[i, j].Update(image_filename=filename)
 
     def set_text(self, current_player_txt, current_winner_txt, counts):
+        """Met à jour les textes en haut de la fenêtre
+        current_player_txt vaut un des couple de la constante TURN_MARK
+        current_winner_txt vaut un des couples de la constante WINNING_MARK ou '-', '-' si l'option n'a pas été choisie
+        counts est un le couple des nombres de pions noirs et blancs
+        """
         for color in (BLACK, WHITE):
-            key = View.KEYS[color]
+            key = View.KEYS[color]  # clé au sens de sg
             turn_txt = current_player_txt[color]
             winner_txt = current_winner_txt[color]
             count = counts[color]
@@ -96,7 +103,7 @@ class Model:
         self.width = controller.width
         self.height = controller.height
         self.lines = controller.lines
-        self.state = self.initial_state()
+        self.states = [self.initial_state()]
 
     def initial_state(self):
         height, width = self.height, self.width
@@ -105,7 +112,7 @@ class Model:
             white = frozenset({(height-i-1, j + i%2) for j in range(0, width, 2) for i in range(lines)})
             black = frozenset({(i, j + i%2) for j in range(0, width, 2) for i in range(lines)}) 
         else:
-            white = frozenset({(height-i-1, j + i%2 - 1) for j in range(0, width, 2) for i in range(lines) if width > j + i%2 - 1 >= 0})
+            white = frozenset({(height-i-1, j + i%2 - 1) for j in range(0, width+1, 2) for i in range(lines) if width > j + i%2 - 1 >= 0})
             black = frozenset({(i, j + i%2) for j in range(0, width, 2) for i in range(lines) if width > j + i%2 >=0}) 
         return GameState(black, white)
 
@@ -120,16 +127,19 @@ class Model:
         return self.inside(end_i, end_j) and self.empty(end_i, end_j)
     
     def player(self):
-        return self.state.player
+        return self.states[-1].player
 
     def counts(self):
-        return len(self.state.players[BLACK]), len(self.state.players[WHITE])
+        state = self.states[-1]
+        return len(state.players[BLACK]), len(state.players[WHITE])
 
-    def get_moves(self, state):
+    def get_moves(self, state=None):
         """renvoie la liste des mouvements possibles pour un état de jeu sous la forme d'un ensemble de tuples 
         (un triplet pour une prise, un couple pour un mouvement). Le premier élément du tuple est le nouvel emplacement du pion. 
         L'autre (ou les deux autres) sont les pions qui disparaissent suite au mouvement
         """
+        if state is None:
+            state = self.states[-1]
         player = state.player
         possible_moves = set()
         pawns, ennemies, moves = state.players[player], state.players[1 - player], MOVES[player]
@@ -206,8 +216,9 @@ class Alquerkonane:
             
     def set_view(self):
         content = {(i, j): EMPTY_FILES[(i + j)%2] for i in range(self.height) for j in range(self.width)}
+        state = self.model.states[-1]
         for color in (BLACK, WHITE):
-            for i, j in self.model.state.players[color]:
+            for i, j in state.players[color]:
                 content[i, j] = PAWN_FILES[color]
         for i, j in content:
             self.view.set_grid(i, j, content[i, j])
