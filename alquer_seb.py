@@ -182,7 +182,7 @@ class Model:
         state = self.states[-1]
         player = state.player
         pawns, ennemies, moves = state.players[player], state.players[1 - player], MOVES[player]
-        if len(pawns) == 0:
+        if (i, j) not in pawns:
             return False
         candidates = self.get_moves_from(i, j, ennemies, moves)
         return len(candidates) > 0
