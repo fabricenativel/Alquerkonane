@@ -33,7 +33,7 @@ RESULTS = ('wins', ''), ('', 'wins')
 HELP_W = 'Largeur du damier, valeur par défaut 4'
 HELP_H = 'Hauteur du damier, valeur par défaut 4'
 HELP_L = 'Nombre de lignes de pions, 1 ou 2 (par défaut)'
-HELP_WIN = "Calcule qui est le gagnant de l'état courant"
+HELP_WHO_START = "Identifiant du joueur qui commence : 0 = Black, 1 = White (par défaut)"
 
 
 class View:
@@ -93,14 +93,13 @@ class View:
 class Model:
 
     def __init__(self, controller):
-        self.ctrl = controller
         self.width = controller.width
         self.height = controller.height
         self.lines = controller.lines
-        self.states = [self.initial_state()]
+        self.states = [self.initial_state(controller.player_start)]
         self.end = False
 
-    def initial_state(self):
+    def initial_state(self, player_id):
         height, width = self.height, self.width
         lines = self.lines
         if  height % 2 == 0:
@@ -109,7 +108,7 @@ class Model:
         else:
             white = frozenset({(height-i-1, j + i%2 - 1) for j in range(0, width+1, 2) for i in range(lines) if width > j + i%2 - 1 >= 0})
             black = frozenset({(i, j + i%2) for j in range(0, width, 2) for i in range(lines) if width > j + i%2 >=0}) 
-        return GameState(black, white)
+        return GameState(black, white, player_id)
 
     def inside(self, i, j):
         return 0 <= i < self.height and 0 <= j < self.width
@@ -212,15 +211,15 @@ class Model:
             if len(self.get_moves(n_state)) == 0: 
                 return player
             next_states.add(n_state)
-        if any(self.winner(s) == player for s in next_states):
-            return player
-        return 1 - player
+        if all(self.winner(s) == 1 - player for s in next_states):
+            return 1 - player
+        return player
 
 
 class GameState:
     """Un état du jeu d'alquerkonane', les attributs sont les coordonnées des pions noirs/blancs et un entier 0, 1 pour le joueur courant"""
 
-    def __init__(self, black, white, player=WHITE):
+    def __init__(self, black, white, player):
         self.players = frozenset(black), frozenset(white) 
         self.player = player
 
@@ -233,6 +232,7 @@ class Alquerkonane:
         self.width = width
         self.height = height
         self.lines = lines if self.height > 2 else 1 # nombre de lignes de pions : 1 ou 2
+        self.player_start = WHITE
         self.model = None # initialisé plus tard avec le setup
         self.view = None  # initialisé plus tard avec le setup
         self.future_winner = None
@@ -245,6 +245,7 @@ class Alquerkonane:
         parser.add_argument('-W', '--width', help=HELP_W, type=int)
         parser.add_argument('-H', '--height', help=HELP_H, type=int)
         parser.add_argument('-l', '--lines', help=HELP_L, type=int)
+        parser.add_argument('-s', '--start', help=HELP_WHO_START)
 
         args = parser.parse_args()
         if args.width:
@@ -255,6 +256,8 @@ class Alquerkonane:
             self.lines = min(2, max(int(args.lines), 1))
         if self.height <= 2:
             self.lines = 1
+        if args.start and args.start in '01':
+            self.player_start = int(args.start)
             
     def set_view(self, end=False):
         content = {(i, j): EMPTY_FILES[(i + j)%2] for i in range(self.height) for j in range(self.width)}
@@ -320,7 +323,6 @@ class Alquerkonane:
             elif event == 'Reset':
                 self.reset()
             elif event == 'Who wins?':
-                print(self.model.states)
                 self.future_winner = self.model.winner()
             elif not self.model.end:
                 if event == 'Undo':
