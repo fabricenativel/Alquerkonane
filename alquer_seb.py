@@ -103,11 +103,11 @@ class Model:
         height, width = self.height, self.width
         lines = self.lines
         if  height % 2 == 0:
-            white = frozenset({(height-i-1, j + i%2) for j in range(0, width, 2) for i in range(lines)})
-            black = frozenset({(i, j + i%2) for j in range(0, width, 2) for i in range(lines)}) 
+            white = {(height-i-1, j + i%2) for j in range(0, width, 2) for i in range(lines)}
+            black = {(i, j + i%2) for j in range(0, width, 2) for i in range(lines)} 
         else:
-            white = frozenset({(height-i-1, j + i%2 - 1) for j in range(0, width+1, 2) for i in range(lines) if width > j + i%2 - 1 >= 0})
-            black = frozenset({(i, j + i%2) for j in range(0, width, 2) for i in range(lines) if width > j + i%2 >=0}) 
+            white = {(height-i-1, j + i%2 - 1) for j in range(0, width+1, 2) for i in range(lines) if width > j + i%2 - 1 >= 0}
+            black = {(i, j + i%2) for j in range(0, width, 2) for i in range(lines) if width > j + i%2 >=0}
         return GameState(black, white, player_id)
 
     def inside(self, i, j):
@@ -163,19 +163,17 @@ class Model:
                 possible_moves.add(((end_i, end_j), (i, j), (i+di//2, j+dj//2)))
         return possible_moves
 
-    def new_state(self, move, state=None):
+    def new_state(self, move, state):
         ''' Génération d'un nouvel état du jeu en jouant un coup'''
         new_position, pawn_1, pawn_2 = move
-        if state is None:
-            state = self.states[-1]
         player = state.player
         pawns, ennemies = state.players[player], state.players[1 - player]
-        new_pawns = frozenset(pawns - {pawn_1} | {new_position})
-        new_ennemies = frozenset(ennemies - {pawn_2})
+        new_pawns = pawns - {pawn_1} | {new_position}
+        new_ennemies = ennemies - {pawn_2}
         if player == BLACK:
-            return GameState(new_pawns, new_ennemies, 1 - player)
+            return GameState(new_pawns, new_ennemies, WHITE)
         else:
-            return GameState(new_ennemies, new_pawns, 1 - player)
+            return GameState(new_ennemies, new_pawns, BLACK)
     
     def valid(self, i, j):
         state = self.states[-1]
@@ -191,16 +189,17 @@ class Model:
             self.states.pop()
 
     def play(self, move):
-        self.states.append(self.new_state(move))
-        state = self.states[-1]
+        state = self.new_state(move, self.states[-1])
+        self.states.append(state)
         player = state.player
-        if len(state.players[player]) == 0 or len(self.get_moves()) == 0:
+        if len(state.players[player]) == 0 or len(self.get_moves(state)) == 0:
             self.end = True
 
+    def last(self):
+        return self.states[-1]
+
     @lru_cache(maxsize=None)
-    def winner(self, state=None):
-        if state is None:
-            state = self.states[-1]
+    def winner(self, state):
         player = state.player
         moves = self.get_moves(state)
         if len(moves) == 0:
@@ -323,7 +322,7 @@ class Alquerkonane:
             elif event == 'Reset':
                 self.reset()
             elif event == 'Who wins?':
-                self.future_winner = self.model.winner()
+                self.future_winner = self.model.winner(self.model.last())
             elif not self.model.end:
                 if event == 'Undo':
                     self.model.undo()
@@ -335,7 +334,7 @@ class Alquerkonane:
         # initialisation du modèle et de la vue
         self.model = Model(self)
         t_start =  perf_counter()
-        self.future_winner = self.model.winner()
+        self.future_winner = self.model.winner(self.model.last())
         perf = perf_counter() - t_start
         print("La position est gagnante pour ", View.KEYS[self.future_winner])
         print(f"Calcul en {perf}s")
