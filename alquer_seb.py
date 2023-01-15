@@ -4,7 +4,7 @@ Variante à partir de la version de Fab
 """
 
 from dataclasses import dataclass
-from functools import lru_cache
+from functools import cache
 import PySimpleGUI as sg
 import argparse
 from time import perf_counter
@@ -151,6 +151,17 @@ class Model:
     def winner(self):
         return self.state().winner()
 
+    def ia_play(self):
+        state = self.state()
+        moves = state.get_moves()
+        for m in moves:
+            new_state = state.new_state(m)
+            if new_state.winner() == state.player:
+                self.play(m)
+                return
+        print('Aucun coup gagnant... random move')
+        self.play(moves.pop())
+
 
 @dataclass(frozen=True)
 class GameState:
@@ -176,11 +187,8 @@ class GameState:
         """
         positions = self.black, self.white
         player = self.player
-        possible_moves = set()
         pawns, ennemies, moves = positions[player], positions[1 - player], MOVES[player]
-        for i, j in pawns:
-            possible_moves |= self.get_moves_from(i, j, ennemies, moves)
-        return possible_moves
+        return {move for i, j in pawns for move in self.get_moves_from(i, j, ennemies, moves)}
 
     def get_moves_from(self, i, j, ennemies, moves):
         """renvoie la liste des mouvements possibles pour le pion en i, j sous la même forme que get_moves"""
@@ -211,7 +219,7 @@ class GameState:
         else:
             return GameState(self.width, self.height, new_ennemies, new_pawns, BLACK)
 
-    @lru_cache(maxsize=None)
+    @cache
     def winner(self):
         player = self.player
         moves = self.get_moves()
@@ -237,11 +245,11 @@ class Alquerkonane:
         self.height = height
         self.lines = lines if self.height > 2 else 1 # nombre de lignes de pions : 1 ou 2
         self.player_start = WHITE
-        self.model = None # initialisé plus tard avec le setup
-        self.view = None  # initialisé plus tard avec le setup
         self.get_winner = False
         self.future_winner = None
         self.end = False
+        self.model = None # initialisé plus tard avec le setup
+        self.view = None  # initialisé plus tard avec le setup
         self.selected = None # pour l'UI: indique donne les coordonnées du pion sélectionné
         self.landing = {} # pour l'UI : atterrissage possible d'un pion sélectionné
         
@@ -333,12 +341,14 @@ class Alquerkonane:
                 self.end = True
             elif event == 'Reset':
                 self.reset()
-            elif not self.model.end:
+            elif not self.model.end and self.model.player() == WHITE:
                 if event == 'Undo':
                     self.model.undo()
                     self.future_winner = self.model.winner() if self.get_winner else None
                 else:
                     self.handle_click(event)
+            if self.model.player() == BLACK:
+                self.model.ia_play()
             self.set_view(self.model.end)
 
     def start(self):
@@ -347,8 +357,8 @@ class Alquerkonane:
         t_start =  perf_counter()
         self.future_winner = self.model.winner()
         perf = perf_counter() - t_start
-        print("La position est gagnante pour ", KEYS[self.future_winner])
-        print(f"Calcul en {perf}s")
+        print(f'Position gagnante pour {KEYS[self.future_winner]}')
+        print(f'Calcul en {perf}s')
         self.view = View(self)
         self.set_view() 
      
